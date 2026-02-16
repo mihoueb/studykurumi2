@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard - 単語帳</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #ff69b4;
+            --primary-light: #ffb6d9;
+            --primary-dark: #ff1493;
+            --secondary: #ffc0cb;
+            --accent: #ff69b4;
+            --bg-light: #fff5f9;
+            --bg-white: #ffffff;
+            --text-dark: #2d1b3d;
+            --text-light: #6b4c6b;
+            --success: #4ade80;
+            --danger: #ef4444;
+            --shadow: 0 10px 30px rgba(255, 105, 180, 0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-light) 0%, #ffe4f0 100%);
+            min-height: 100vh;
+            color: var(--text-dark);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* ヘッダー */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: slideDownFade 0.6s ease-out;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        /* 統計ボックス */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: var(--bg-white);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.08);
+            border-left: 4px solid var(--primary);
+            animation: slideUpFade 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .stat-box:nth-child(1) { animation-delay: 0.1s; }
+        .stat-box:nth-child(2) { animation-delay: 0.2s; }
+        .stat-box:nth-child(3) { animation-delay: 0.3s; }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* カード */
+        .card-container {
+            perspective: 1000px;
+            margin-bottom: 30px;
+            height: 300px;
+            animation: slideUpFade 0.6s ease-out 0.4s both;
+        }
+
+        .card {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transform-style: preserve-3d;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, var(--primary) 0%, #ff69b4 100%);
+            color: white;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary-light) 100%);
+            color: var(--text-dark);
+            transform: rotateY(180deg);
+        }
+
+        .card-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .card-content {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .card-hint {
+            font-size: 1rem;
+            margin-top: 20px;
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        .flip-hint {
+            position: absolute;
+            bottom: 15px;
+            font-size: 0.8rem;
+            opacity: 0.6;
+            animation: pulse 2s infinite;
+        }
+
+        /* ボタングループ */
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            animation: slideUpFade 0.6s ease-out 0.5s both;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, #22c55e 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--secondary) 100%);
+            color: var(--text-dark);
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        /* 進捗バー */
+        .progress-section {
+            margin-bottom: 30px;
+            animation: slideUpFade 0.6s ease-out 0.6s both;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 105, 180, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        /* ローディング */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 105, 180, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* エラーメッセージ */
+        .error-message {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            color: var(--danger);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--danger);
+        }
+
+        /* 完了メッセージ */
+        .completion-message {
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(135deg, var(--bg-white) 0%, var(--bg-light) 100%);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            animation: slideUpFade 0.6s ease-out;
+        }
+
+        .completion-message h2 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .completion-message p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        /* アニメーション */
+        @keyframes slideDownFade {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUpFade {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .card-content {
+                font-size: 1.8rem;
+            }
+
+            .card-face {
+                padding: 30px 20px;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <h1>✨ Flashcard</h1>
+            <p>単語帳で学習しよう</p>
+        </div>
+
+        <!-- 統計情報 -->
+        <div class="stats-container">
+            <div class="stat-box">
+                <div class="stat-label">総問題数</div>
+                <div class="stat-value" id="totalCount">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">進捗</div>
+                <div class="stat-value" id="currentCount">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">正答率</div>
+                <div class="stat-value" id="accuracy">-</div>
+            </div>
+        </div>
+
+        <!-- エラーメッセージ -->
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <!-- ローディング -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- メインコンテンツ -->
+        <div id="mainContent" style="display: none;">
+            <!-- カード -->
+            <div class="card-container">
+                <div class="card" id="card">
+                    <div class="card-face card-front" id="cardFront">
+                        <div class="card-label">問題</div>
+                        <div class="card-content" id="cardQuestion">-</div>
+                        <div class="flip-hint">クリックで答えを表示</div>
+                    </div>
+                    <div class="card-face card-back" id="cardBack">
+                        <div class="card-label">答え</div>
+                        <div class="card-content" id="cardAnswer">-</div>
+                        <div class="flip-hint">クリックで問題に戻る</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 進捗バー -->
+            <div class="progress-section">
+                <div class="progress-label">
+                    <span>学習進捗</span>
+                    <span id="progressText">0/0</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <!-- ボタン -->
+            <div class="button-group">
+                <button class="btn btn-success" id="correctBtn">✓ できた</button>
+                <button class="btn btn-danger" id="incorrectBtn">✗ できなかった</button>
+            </div>
+
+            <!-- リセットボタン -->
+            <button class="btn btn-secondary" id="resetBtn">最初から始める</button>
+        </div>
+
+        <!-- 完了メッセージ -->
+        <div id="completionMessage" style="display: none;">
+            <div class="completion-message">
+                <h2>🎉 すべて完了しました！</h2>
+                <p>お疲れ様でした</p>
+                <p id="finalStats" style="margin-top: 20px;"></p>
+                <button class="btn btn-secondary" id="restartBtn">もう一度挑戦</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 設定
+        const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwrU6eMI2JlSXGS1twxfxh3dkF4Y5d73PpAb2oszOQYhadBGy4I10A-jxHpDCCgaLU/exec';
+
+        // 状態管理
+        let cards = [];
+        let currentIndex = 0;
+        let isFlipped = false;
+
+        // DOM要素
+        const mainContent = document.getElementById('mainContent');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const completionMessage = document.getElementById('completionMessage');
+        const card = document.getElementById('card');
+        const cardQuestion = document.getElementById('cardQuestion');
+        const cardAnswer = document.getElementById('cardAnswer');
+        const correctBtn = document.getElementById('correctBtn');
+        const incorrectBtn = document.getElementById('incorrectBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const restartBtn = document.getElementById('restartBtn');
+
+        // 初期化
+        async function init() {
+            try {
+                const data = await fetchData();
+                if (!data || data.length === 0) {
+                    showError('データが見つかりません。スプレッドシートを確認してください。');
+                    return;
+                }
+                cards = data;
+                showMainContent();
+                displayCard();
+            } catch (error) {
+                console.error('Error:', error);
+                showError('データの読み込みに失敗しました。' + error.message);
+            }
+        }
+
+        // データを取得
+        async function fetchData() {
+            const response = await fetch(`${APP_SCRIPT_URL}?action=getData`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            return data;
+        }
+
+        // カードを表示
+        function displayCard() {
+            if (currentIndex >= cards.length) {
+                showCompletion();
+                return;
+            }
+
+            const current = cards[currentIndex];
+            cardQuestion.textContent = current.japanese;
+            cardAnswer.textContent = current.answer;
+            isFlipped = false;
+            card.classList.remove('flipped');
+
+            updateStats();
+        }
+
+        // カードをフリップ
+        card.addEventListener('click', () => {
+            isFlipped = !isFlipped;
+            card.classList.toggle('flipped');
+        });
+
+        // 「できた」ボタン
+        correctBtn.addEventListener('click', async () => {
+            await updateCard(true);
+            nextCard();
+        });
+
+        // 「できなかった」ボタン
+        incorrectBtn.addEventListener('click', async () => {
+            await updateCard(false);
+            nextCard();
+        });
+
+        // カードをアップデート
+        async function updateCard(isCorrect) {
+            try {
+                const current = cards[currentIndex];
+                const response = await fetch(
+                    `${APP_SCRIPT_URL}?action=updateData&row=${current.row}&correct=${isCorrect}`
+                );
+                if (!response.ok) throw new Error('Update failed');
+                
+                // ローカルのデータも更新
+                if (isCorrect) {
+                    current.correct++;
+                }
+                current.total++;
+            } catch (error) {
+                console.error('Error updating card:', error);
+                showError('データの更新に失敗しました');
+            }
+        }
+
+        // 次のカード
+        function nextCard() {
+            currentIndex++;
+            displayCard();
+        }
+
+        // 統計をアップデート
+        function updateStats() {
+            document.getElementById('totalCount').textContent = cards.length;
+            document.getElementById('currentCount').textContent = currentIndex + 1;
+
+            // 全体の正答率
+            let totalCorrect = 0;
+            let totalAttempts = 0;
+            cards.forEach(card => {
+                totalCorrect += card.correct;
+                totalAttempts += card.total;
+            });
+
+            if (totalAttempts > 0) {
+                const accuracy = Math.round((totalCorrect / totalAttempts) * 100);
+                document.getElementById('accuracy').textContent = accuracy + '%';
+            } else {
+                document.getElementById('accuracy').textContent = '-';
+            }
+
+            // 進捗バー
+            const progress = (currentIndex / cards.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `${currentIndex}/${cards.length}`;
+        }
+
+        // メインコンテンツを表示
+        function showMainContent() {
+            loading.style.display = 'none';
+            mainContent.style.display = 'block';
+        }
+
+        // エラーメッセージを表示
+        function showError(message) {
+            loading.style.display = 'none';
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        // 完了メッセージを表示
+        function showCompletion() {
+            mainContent.style.display = 'none';
+            completionMessage.style.display = 'block';
+
+            let totalCorrect = 0;
+            let totalAttempts = 0;
+            cards.forEach(card => {
+                totalCorrect += card.correct;
+                totalAttempts += card.total;
+            });
+
+            const accuracy = totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
+            const finalStats = document.getElementById('finalStats');
+            finalStats.innerHTML = `
+                <strong>正答数:</strong> ${totalCorrect}/${totalAttempts}<br>
+                <strong>正答率:</strong> ${accuracy}%
+            `;
+        }
+
+        // リセット
+        resetBtn.addEventListener('click', () => {
+            currentIndex = 0;
+            isFlipped = false;
+            card.classList.remove('flipped');
+            displayCard();
+        });
+
+        restartBtn.addEventListener('click', () => {
+            location.reload();
+        });
+
+        // ページ読み込み時に初期化
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
