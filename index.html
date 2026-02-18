@@ -253,6 +253,7 @@
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -733,8 +734,6 @@
             cardQuestion.textContent = current.japanese;
             document.getElementById('cardHint').textContent = current.english;
             cardAnswer.textContent = current.answer;
-            isFlipped = false;
-            card.classList.remove('flipped');
 
             updateStats();
         }
@@ -786,9 +785,21 @@
             }
         }
 
-        // 次のカード
+        // 次のカード（アニメーションなしでリセットしてから表示）
         function nextCard() {
             currentIndex++;
+            isFlipped = false;
+
+            // transitionを一時的に無効化して瞬時に表面に戻す
+            card.style.transition = 'none';
+            card.classList.remove('flipped');
+
+            // 強制リフロー（DOMに変更を即時反映させる）
+            card.offsetHeight;
+
+            // transitionを復活させる
+            card.style.transition = '';
+
             displayCard();
         }
 
@@ -856,8 +867,13 @@
         function reset() {
             currentIndex = 0;
             isFlipped = false;
+
+            // カードを瞬時にリセット
+            card.style.transition = 'none';
             card.classList.remove('flipped');
-            
+            card.offsetHeight;
+            card.style.transition = '';
+
             modeSelection.style.display = 'flex';
             header.classList.remove('show');
             statsContainer.classList.remove('show');
